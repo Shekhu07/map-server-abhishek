@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, status, Depends, Security
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from docs_tool import append_to_doc, find_section_by_anchor
-from gmail_tool import create_email_draft
+from gmail_tool import create_email_draft, send_email
 
 app = FastAPI(
     title="Google Workspace MCP Server",
@@ -98,6 +98,25 @@ async def handle_create_email_draft(payload: EmailPayload, api_key: str = Depend
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create Gmail draft: {str(e)}"
+        )
+
+@app.post("/send_email")
+async def handle_send_email(payload: EmailPayload, api_key: str = Depends(verify_api_key)):
+    
+    try:
+        # Execute Gmail action in a thread
+        result = await asyncio.to_thread(
+            send_email, payload.to, payload.subject, payload.body
+        )
+        return {
+            "status": "success",
+            "message": "Email successfully sent.",
+            "response": result
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send email: {str(e)}"
         )
 
 if __name__ == "__main__":
