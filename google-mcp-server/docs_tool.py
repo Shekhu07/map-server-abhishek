@@ -49,3 +49,39 @@ def append_to_doc(doc_id: str, content: str):
     ).execute()
     
     return response
+
+
+def find_section_by_anchor(doc_id: str, anchor: str) -> bool:
+    """
+    Searches the specified Google Document for an exact text match of the anchor string.
+    
+    Args:
+        doc_id (str): The Google Doc ID.
+        anchor (str): The text string to search for.
+        
+    Returns:
+        bool: True if the anchor text is found in the document, False otherwise.
+    """
+    # Retrieve authenticated credentials
+    creds = get_credentials()
+    
+    # Build the Google Docs service
+    service = build('docs', 'v1', credentials=creds)
+    
+    # Retrieve the document content
+    doc = service.documents().get(documentId=doc_id).execute()
+    
+    # Extract all text elements from the document body
+    body_content = doc.get('body', {}).get('content', [])
+    
+    # Simple search: look through all text elements for the anchor string
+    for element in body_content:
+        if 'paragraph' in element:
+            for pe in element['paragraph'].get('elements', []):
+                if 'textRun' in pe:
+                    text = pe['textRun'].get('content', '')
+                    if anchor in text:
+                        return True
+                        
+    return False
+

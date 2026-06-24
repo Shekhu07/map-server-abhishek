@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI, HTTPException, status, Depends, Security
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
-from docs_tool import append_to_doc
+from docs_tool import append_to_doc, find_section_by_anchor
 from gmail_tool import create_email_draft
 
 app = FastAPI(
@@ -31,6 +31,10 @@ class DocPayload(BaseModel):
     doc_id: str
     content: str
 
+class SearchPayload(BaseModel):
+    doc_id: str
+    anchor: str
+
 class EmailPayload(BaseModel):
     to: str
     subject: str
@@ -38,7 +42,24 @@ class EmailPayload(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "Google MCP Server is running. Use POST /append_to_doc and POST /create_email_draft."}
+    return {"message": "Google MCP Server is running. Use POST /append_to_doc, POST /search_doc, and POST /create_email_draft."}
+
+@app.post("/search_doc")
+async def handle_search_doc(payload: SearchPayload, api_key: str = Depends(verify_api_key)):
+    
+    try:
+        result = await asyncio.to_thread(
+            find_section_by_anchor, payload.doc_id, payload.anchor
+        )
+        return {
+            "status": "success",
+            "found": result
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search Google Docs: {str(e)}"
+        )
 
 @app.post("/append_to_doc")
 async def handle_append_to_doc(payload: DocPayload, api_key: str = Depends(verify_api_key)):
