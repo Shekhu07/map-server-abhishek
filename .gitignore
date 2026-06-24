@@ -1,0 +1,17 @@
+# Python overrides
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+venv/
+.env
+
+# Credentials (CRITICAL: Do not commit these)
+credentials.json
+token.json
+client_secret_*.json
+
+# OS files
+.DS_Store
